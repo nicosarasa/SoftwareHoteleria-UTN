@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <conio.h>
 
 #define RESET_COLOR    "\x1b[0m"
 #define ROJO_T     "\x1b[31m"
@@ -74,26 +75,26 @@ Cliente cargarCliente(char nombre[])
     int flag = 0;
     if(hab)
     {
-        printf("\nNOMBRE: ");
+        printf("\n- NOMBRE: ");
         fflush(stdin);
         gets(A.nombre);
 
-        printf("\nNACIONALIDAD: ");
+        printf("\n- NACIONALIDAD: ");
         fflush(stdin);
         gets(A.nacionalidad);
 
-        printf("\nEDAD: ");
+        printf("\n- EDAD: ");
         do
         {
             scanf("%i", &A.edad);
             if(A.edad < 1 || A.edad > 130)
             {
-                printf("\nSe ingreso una edad invalida, intente nuevamente.");
+                printf("\n[Se ingreso una edad invalida, intente nuevamente.]");
                 system("pause");
             }
         }while(A.edad < 1 || A.edad > 130);
 
-    printf("\nHABITACIONES DISPONIBLES ");
+    printf("\n- HABITACIONES DISPONIBLES ");
     while((fread(&B, sizeof(Cliente), 1, hab))>0)
     {
         if((strcmpi(B.estado, "Disponible"))==0)
@@ -112,7 +113,7 @@ Cliente cargarCliente(char nombre[])
             {
                 if((strcmpi(B.estado, "Ocupada"))==0)
                 {
-                    printf("\nLa habitacion elegida esta ocupada. Ingrese otra habitacion por favor.");
+                    printf("\n[La habitacion elegida esta ocupada. Ingrese otra habitacion por favor.]");
                     system("pause");
                     flag=1;
                 }
@@ -197,70 +198,134 @@ void setHabitacionesStatus(char nombre[])
 }
 
 
-void registrarUsuario(char usuarios[]){
-    Usuario usuario;
-    FILE *archivo = fopen(usuarios, "ab");
 
-    printf("----| Formulario de Registro |----");
-    printf("Nombre de usuario: ");
-    scanf("%s", usuario.nombre);
-    printf("Contrasena: ");
-    scanf("%s", usuario.contrasena);
+void login(char nombreArchivo[])
+{
+    int opcion, i=0;
+    char nombre[30];
+    char clave[30];
+    char caracter;
 
-    if(archivo){
-        fwrite(&usuario, sizeof(Usuario), 1, archivo);
-        fclose(archivo);
+    printf("\t----| Bienvenido a ... Sistema de Software Hotelero |----\n\n");
+
+    sleep(3);
+
+    printf("- Seleccione una opcion:\n\n");
+    printf("\t1. Iniciar sesion\n\n");
+    printf("\t2. Registrarse\n\n");
+    scanf("%d", &opcion);
+    system("cls");
+
+    if (opcion == 1)
+    {
+        printf("\t----| Inicio de sesión en el software |----\n");
+        printf("\n- USERNAME: ");
+        scanf("%s", nombre);
+        printf("\n- PASSWORD: ");
+        while(caracter=getch())
+        {
+            if(caracter==13)
+            {
+                clave[i]= '\0';
+                break;
+            }
+            else if (caracter==8)
+            {
+                if(i>0)
+                {
+                    i--;
+                    printf("\b \b");
+                }
+            }
+            else
+            {
+                printf("*");
+                clave[i]=caracter;
+                i++;
+            }
+        }
+        system("cls");
+
+        if(verificarUsuario(nombreArchivo,nombre,clave))
+        {
+            printf("Inicio de sesion exitoso. Bienvenido %s!\n", nombre);
+        }
+        else
+        {
+            printf("Nombre de usuario o contrasena incorrectos.\n");
+        }
+
+    }
+    else if (opcion == 2)
+    {
+        registrarUsuario(nombreArchivo);
+    }
+    else
+    {
+        printf("Opcion invalida.\n");
+    }
+}
+
+void registrarUsuario(char usuarios[])
+{
+    Usuario A;
+    int i=0;
+    char caracter;
+    char clave[30];
+    FILE *usuario = fopen(usuarios, "ab");
+
+    printf("\t----| Formulario de Registro |----\n");
+    printf("\n- USUARIO: ");
+    scanf("%s", A.nombre);
+    printf("\n- CLAVE: ");
+    while(caracter=getch())
+    {
+        if(caracter==13)
+        {
+            clave[i]= '\0';
+            break;
+        }
+        else if (caracter==8)
+        {
+            if(i>0)
+            {
+                i--;
+                printf("\b \b");
+            }
+        }
+        else
+        {
+            printf("*");
+            clave[i]=caracter;
+            i++;
+        }
+    }
+
+    if(usuario)
+    {
+        fwrite(&A, sizeof(Usuario), 1, usuario);
+        fclose(usuario);
     }
 
     printf("Usuario registrado correctamente!\n");
 }
 
-int verificarUsuario(char usuarios[], char nombre, char contrasena){
-    Usuario usuario;
+int verificarUsuario(char nombreArchivo[], char nombre[], char contrasena[])
+{
+    Usuario A;
 
-    FILE *archivo = fopen(usuarios, "rb");
-    if(archivo){
-        while(fread(&usuario, sizeof(Usuario), 1, archivo) > 0){
-            if(strcmp(nombre, usuario.nombre) == 0 && strcmp(contrasena, usuario.contrasena) == 0){
-                fclose(archivo);
+    FILE *usuario = fopen(nombreArchivo, "rb");
+    if(usuario)
+    {
+        while((fread(&A, sizeof(Usuario), 1, usuario)) > 0)
+        {
+            if((strcmp(nombre, A.nombre)) == 0 && (strcmp(contrasena, A.contrasena)) == 0)
+            {
+                fclose(usuario);
                 return 1;
             }
         }
-        fclose(archivo);
+        fclose(usuario);
     }
     return 0;
-}
-
-void login(char usuarios[]){
-    FILE *archivo = fopen(usuarios, "rb");
-
-    printf("----| Bienvenido a ... Sistema de Software Hotelero |----");
-
-    system("pause");
-    
-
-    printf("¿Estas registrado?");
-    printf("1. Si\n");
-    printf("2. No\n");
-    printf("Seleccione una opcion: ");
-    scanf("%d", &opcion);
-
-    if (opcion == 1)
-    {
-        printf("Nombre de usuario: ");
-        scanf("%s", nombre);
-        printf("Contrasena: ");
-        scanf("%s", contrasena);
-
-        if(verificarUsuario(usuarios,nombre,contrasena)){
-            printf("Inicio de sesion exitoso. Bienvenido %s!\n", nombre);
-        }else{
-            printf("Nombre de usuario o contrasena incorrectos.\n");
-        }
-
-    }else if (opcion == 2){
-        registrarUsuario(usuarios);
-    }else{
-        printf("Opcion invalida.\n");
-    }
 }
