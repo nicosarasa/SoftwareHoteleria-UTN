@@ -15,39 +15,49 @@
 #define MAGENTA_T  "\x1b[35m"
 #define CYAN_T     "\x1b[36m"
 #define BLANCO_T   "\x1b[37m"
+#define NARANJA_T   "\x1B[38;2;255;102;0m"
 
 // CONSTANTES
-const int rows=5;
-const int cols=3;
+const int rows=5; // pisos del edificio
+const int cols=3; // habitaciones por piso
+
+// NOMBRES DE LOS ARCHIVOS
 const char archivoHabitaciones[]="Habitaciones.txt";
 const char archivoClientes[]="Clientes.txt";
 const char archivoClientesAUX[]="ClientesAuxiliares.txt";
-const char archivoUsuarios[]="Usuarios.txt";
+const char archivoAdministrador[]="Administrador.txt";
 
 // PROTOTIPADO DE ESTRUCTURAS
 typedef struct
 {
-    char nombre[20];
-    char contrasena[50];
-} Usuario;
-
+    int diaEntrada;
+    int mesEntrada;
+    int anioEntrada;
+    int diaSalida;
+    int mesSalida;
+    int anioSalida;
+} Fecha;
 typedef struct
 {
-    int numero;
-    char categoria[20];
+    int numero; //numero de la habitacion
+    char categoria[20]; // vip o normal
     int precio;
-    char estado[20];
+    char estado[20]; // disponible u ocupada
     int camas;
-    int personas;
+    int personas; // personas que ocupan la habitacion
 } Habitacion;
 
 typedef struct
 {
-    Habitacion habitacion;
     char nombre[50];
-    char nacionalidad[40];
+    int dni;
     int edad;
-    int codigo;
+    char nacionalidad[40];
+    unsigned long telefono;
+    char estado[20]; // activo o inactivo
+    Habitacion habitacion;
+    Fecha estadia;
+    int codigo; //codigo unico de cliente
 } Cliente;
 
 typedef struct
@@ -57,53 +67,501 @@ typedef struct
 } Administrador;
 
 // PROTOTIPADO DE FUNCIONES
+
+void menuPrincipal(int matrizEdificio[rows][cols]);
+void subMenuReservaClientes();
+void subMenuCheckInOut();
+void subMenuHabitacionAct(int matrizEdificio[rows][cols]);
+void subMenuListados();
+void subMenuMasInformacion();
+void login();
+void registrarUsuario();
+int verificarUsuario(char nombre[], char contrasena[]);
+void mostrarInformes();
+void checkIn(Cliente A);
+Cliente cargarCliente(int);
 void setHabitacionesStatus(int M[rows][cols]);
-Cliente cargarCliente(int dato, int H);
-void altaDeClientes();
 void mostrarEdificio(int M[rows][cols]);
+void mostrarUnCliente(Cliente A);
 void mostrarClientes();
-void mostrarUnCliente();
-int bajaDeCliente();
 Cliente consultaCliente();
-int bajaDeCliente();
+void mostrarUnaHabitacion(Habitacion A);
+void mostrarHabitaciones();
+void ordenacionPilaDisponibles(Pila * dada);
+void listadoInsercionPrecioHab();
+void insertarPrecio(Habitacion A[], int i, Habitacion dato);
+int modificacionDeClientes(Cliente A);
+int verificarArchivoClientes();
+void listadoInsercionNumeroHab();
+void insertarNumero(Habitacion A[], int i, Habitacion dato);
+int checkOut(Cliente A);
+void listadoInsercionEdadCliente(int flag);
+void insertarEdad(Cliente A[], int i, Cliente dato);
+void listadoSeleccionNombreCliente(int flag);
+int seleccionNombre(Cliente A[], int posicion, int validos);
+void listadoInsercionHabitacionDeCliente(int flag);
+void insertarNroHabitacionCliente(Cliente A[], int i, Cliente dato);
+void listadoInsercionHabDisponible();
+void editarHabitacion();
+void subMenuConfiguracion();
+
+
 
 int main()
 {
-    Habitacion habitaciones[rows*cols];
     srand(time(NULL));
     int matrizEdificio[rows][cols];
-    int op=0;
-    setHabitacionesStatus(matrizEdificio);
-
+    setHabitacionesStatus(matrizEdificio); // seteo de habitaciones disponibles si el archivo no esta creado
+    menuPrincipal(matrizEdificio);
+    return 0;
 }
 
+void menuPrincipal(int matrizEdificio[rows][cols])
+{
+    int op;
+    do
+    {
+        system("cls");
+        printf(" - Bienvenido\n\n\t- - - - "CYAN_T"SISTEMA ADMINISTRATIVO HOTELERO "RESET_COLOR "- - - -\n\n");
+        printf("\t[ 1 ] Iniciar sesion\n\n\t[ 2 ] Registrarse\n\n");
+        printf("  -  ");
+        scanf("%i", &op);
+        system("cls");
 
+        switch (op)
+        {
+        case 1:
+            login();
+            system("pause");
+            do
+            {
+                system("cls");
+                printf("\t- - - - "CYAN_T"MENU PRINCIPAL  "RESET_COLOR "- - - -\n\n");
+                printf(" [ 1 ] Clientes\n\n [ 2 ] Check in/Check out\n\n [ 3 ] Instalaciones\n\n [ 4 ] Listados\n\n [ 5 ] Mas informacion\n\n [ 6 ] Configuracion\n\n [ 0 ] Salir del sistema \n\n  - ");
+                scanf("%i", &op);
+                system("cls");
+                switch(op)
+                {
+                case 1:
+                    subMenuReservaClientes();
+                    break;
+                case 2:
+                    subMenuCheckInOut();
+                    break;
+                case 3:
+                    mostrarEdificio(matrizEdificio);
+                    system("pause");
+                    system("cls");
+                    break;
+                case 4:
+                    subMenuListados();
+                    break;
+                case 5:
+                    subMenuMasInformacion();
+                    break;
+                case 6:
+                    subMenuConfiguracion();
+                    break;
+                case 0:
+                    system("cls");
+                    exit(0);
+                default:
+                    break;
+                }
+            }
+            while(op!=0);
+            break;
+        case 2:
+            registrarUsuario();
+            system("pause");
+            system("cls");
+            break;
+        }
+    }
+    while(1);
+}
+void subMenuReservaClientes()
+{
+    int op, flag;
+    Cliente A;
+    do
+    {
 
+        system("cls");
+        printf("\t- - - - "CYAN_T"MENU CLIENTES  "RESET_COLOR "- - - -\n\n");
+        printf(" [ 1 ] Registrar cliente\n\n [ 2 ] Consulta de clientes\n\n [ 0 ] Volver\n\n  - ");
+        scanf("%i", &op);
+        system("cls");
+        switch(op)
+        {
+        case 1:
+            printf(AMARILLO_T"\t- - MENU DE RESERVAS - -\n\n"RESET_COLOR);
+            cargarCliente(0);
+            printf("\n\tVolviendo al menu principal.");
+            Sleep(700);
+            printf(" .");
+            Sleep(700);
+            system("cls");
+            break;
+        case 2:
+            flag=verificarArchivoClientes();
+            if(flag==0)
+            {
+                printf(ROJO_T" - ERROR: Todavia no se ha cargado ningun cliente. Ingrese uno e intente mas tarde\n\n"RESET_COLOR);
+                system("pause");
+                system("cls");
+                break;
+            }
+            printf(AMARILLO_T"\t- - CONSULTA DE CLIENTE - -\n\n"RESET_COLOR);
+            printf(" - Ingrese el codigo del cliente a consultar (presione 0 para cancelar) ");
+            A=consultaCliente();
+            if(A.codigo==0)
+            {
+                break;
+            }
+            mostrarUnCliente(A);
+            printf("\n");
+            system("pause");
+            system("cls");
+            break;
+        case 0:
+            system("cls");
+            break;
+        default:
+            break;
+        }
+    }
+    while(op!=0);
+}
+void subMenuCheckInOut()
+{
+    int op, flag, dato;
+    Cliente A;
+    do
+    {
+        system("cls");
+        printf("\t- - - - "CYAN_T"MENU CHECK IN/CHECK OUT  "RESET_COLOR "- - - -\n\n");
+        printf(" [ 1 ] Check in\n\n [ 2 ] Check out\n\n [ 0 ] Volver\n\n  - ");
+        scanf("%i", &op);
+        system("cls");
+        switch(op)
+        {
+        case 1:
+            flag=verificarArchivoClientes();
+            if(flag==0)
+            {
+                printf(ROJO_T" - ERROR: Todavia no se ha cargado ningun cliente. Ingrese uno e intente mas tarde\n\n"RESET_COLOR);
+                system("pause");
+                system("cls");
+                break;
+            }
+            printf(AMARILLO_T"\t- - CHECK IN - -\n\n"RESET_COLOR);
+            printf("\t- Ingrese el numero de cliente a realizar check in (presione 0 para cancelar) ");
+            flag=0;
 
+            A=consultaCliente();
+            if(A.codigo==0)
+            {
+                break;
+            }
+            if((strcmpi(A.estado,"Activo"))==0)
+            {
+                printf(ROJO_T"\nERROR: El cliente ingresado ya esta dado de alta en el hotel.\n"RESET_COLOR);
+                system("pause");
+                break;
+            }
+            mostrarUnCliente(A);
+            checkIn(A);
+            system("cls");
+            break;
+        case 2:
+            flag=verificarArchivoClientes();
+            if(flag==0)
+            {
+                printf(ROJO_T" - ERROR: Todavia no se ha cargado ningun cliente. Ingrese uno e intente mas tarde\n\n"RESET_COLOR);
+                system("pause");
+                system("cls");
+                break;
+            }
+            printf(AMARILLO_T"\t- - CHECK OUT - -\n\n"RESET_COLOR);
+            printf("\t- Ingrese el numero de cliente a realizar check out (presiones 0 para cancelar) ");
+            flag=0;
+
+            A=consultaCliente();
+            if(A.codigo==0)
+            {
+                break;
+            }
+            if((strcmpi(A.estado,"Inactivo"))==0)
+            {
+                printf(ROJO_T"\nERROR: El cliente ingresado no esta dado de alta en el hotel. Ingrese al menu de check in para ingresarlo\n"RESET_COLOR);
+                system("pause");
+                break;
+            }
+
+            mostrarUnCliente(A);
+            printf("\n - Desea hacer el check out del cliente"AMARILLO_T" %s"RESET_COLOR"?\n [ 1 ] Si\n\n [ 2 ] No\n - ", A.nombre);
+            scanf("%i", &dato);
+            if(dato==2)
+            {
+                printf("\nVolviendo al menu principal...");
+                Sleep(2600);
+                system("cls");
+                break;
+            }
+            checkOut(A);
+            system("cls");
+            break;
+        case 0:
+            system("cls");
+            break;
+        default:
+            break;
+        }
+    }
+    while(op!=0);
+}
+
+void subMenuListados()
+{
+    int op, flag;
+    do
+    {
+        system("cls");
+        printf("\t- - - - "CYAN_T"MENU LISTADOS  "RESET_COLOR "- - - -\n\n");
+        printf(" [ 1 ] Listado de clientes\n\n [ 2 ] Listado de habitaciones\n\n [ 0 ] Volver\n\n  - ");
+        scanf("%i", &op);
+        system("cls");
+        switch(op)
+        {
+        case 1:
+
+            do
+            {
+                printf(CYAN_T"\n\n\t- - LISTADO DE CLIENTES - -\n\n"RESET_COLOR);
+                printf(" [ 1 ] Listado Activos\n\n [ 2 ] Listado Totales\n\n [ 0 ] Volver\n\n - ");
+                scanf("%i", &op);
+                system("cls");
+                switch(op)
+                {
+                case 1:
+                    do
+                    {
+                        flag=1;
+                        printf(CYAN_T"\n\n\t- - LISTADO DE CLIENTES ACTIVOS - -\n\n"RESET_COLOR);
+                        printf(" [ 1 ] Listado por nombre\n\n [ 2 ] Listado por edad\n\n [ 3 ] Listado por numero de habitacion\n\n [ 0 ] Volver\n\n - ");
+                        scanf("%i", &op);
+                        system("cls");
+
+                        switch(op)
+                        {
+                        case 1:
+                            listadoSeleccionNombreCliente(flag);
+                            system("pause");
+                            system("cls");
+                            break;
+                        case 2:
+                            listadoInsercionEdadCliente(flag);
+                            system("pause");
+                            system("cls");
+                            break;
+                        case 3:
+                            listadoInsercionHabitacionDeCliente(flag);
+                            system("pause");
+                            system("cls");
+                            break;
+                        case 0:
+                            system("cls");
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                    while(op!=0);
+                    system("cls");
+                    break;
+                case 2:
+
+                    do
+                    {
+                        flag=0;
+                        printf(CYAN_T"\n\n\t- - LISTADO DE CLIENTES TOTALES - -\n\n"RESET_COLOR);
+                        printf(" [ 1 ] Listado por nombre\n\n [ 2 ] Listado por edad\n\n [ 0 ] Volver\n\n - ");
+                        scanf("%i", &op);
+                        system("cls");
+                        switch(op)
+                        {
+                        case 1:
+                            listadoSeleccionNombreCliente(flag);
+                            system("pause");
+                            system("cls");
+                            break;
+                        case 2:
+                            listadoInsercionEdadCliente(flag);
+                            system("pause");
+                            system("cls");
+                            break;
+                        case 0:
+                            system("cls");
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                    while(op!=0);
+                    break;
+                case 0:
+                    system("cls");
+                    break;
+                default:
+                    break;
+                }
+            }
+            while(op!=0);
+            system("cls");
+            break;
+        case 2:
+            do
+            {
+                printf(CYAN_T"\n\n\t- - LISTADO DE HABITACIONES - -\n\n"RESET_COLOR);
+                printf(" [ 1 ] Listado por precio\n\n [ 2 ] Listado por nro. de habitacion\n\n [ 3 ] Habitaciones Disponibles\n\n [ 0 ] Volver\n\n- ");
+                scanf("%i", &op);
+                system("cls");
+                switch(op)
+                {
+                case 1:
+                    listadoInsercionPrecioHab();
+                    system("pause");
+                    system("cls");
+                    break;
+                case 2:
+                    listadoInsercionNumeroHab();
+                    system("pause");
+                    system("cls");
+                    break;
+                case 3:
+                    listadoInsercionHabDisponible();
+                    system("pause");
+                    system("cls");
+                    break;
+                case 0:
+                    system("cls");
+                    break;
+                default:
+                    break;
+                }
+            }
+            while(op!=0);
+            system("cls");
+            break;
+        case 0:
+            system("cls");
+            break;
+        default:
+            break;
+        }
+    }
+    while(op!=0);
+}
+void subMenuMasInformacion()
+{
+    int op;
+    do
+    {
+        system("cls");
+        printf("\t- - - - "CYAN_T"MAS INFORMACION  "RESET_COLOR "- - - -\n\n");
+        printf(" [ 1 ] Mostrar estadistica e informe\n\n [ 0 ] Volver\n\n  - ");
+        scanf("%i", &op);
+        system("cls");
+        switch(op)
+        {
+        case 1:
+            mostrarInformes();
+            system("pause");
+            system("cls");
+            break;
+        case 0:
+            system("cls");
+            break;
+        }
+    }
+    while(op!=0);
+}
+void subMenuConfiguracion()
+{
+    int op, flag, dato;
+    Cliente A;
+    do
+    {
+        system("cls");
+        printf("\t- - - - "CYAN_T"MENU CONFIGURACION  "RESET_COLOR "- - - -\n\n");
+        printf(" [ 1 ] Editar habitacion\n\n [ 2 ] Editar clientes\n\n [ 0 ] Volver\n\n  - ");
+        scanf("%i", &op);
+        system("cls");
+        switch(op)
+        {
+        case 1:
+            editarHabitacion();
+            system("pause");
+            system("cls");
+            break;
+          case 2:
+            flag=verificarArchivoClientes();
+            if(flag==0)
+            {
+                printf(ROJO_T" - ERROR: Todavia no se ha cargado ningun cliente. Ingrese uno e intente mas tarde\n\n"RESET_COLOR);
+                system("pause");
+                system("cls");
+                break;
+            }
+            printf(AMARILLO_T"\t- - MODIFICACION DE CLIENTE - -\n\n"RESET_COLOR);
+            printf("\t- Ingrese el numero de cliente a modificar (presiones 0 para cancelar) ");
+            A=consultaCliente();
+            if(A.codigo==0)
+            {
+                break;
+            }
+
+            mostrarUnCliente(A);
+            printf("\n - Desea modificar ese cliente?\n [ 1 ] Si\n\n [ 2 ] No\n - ");
+            scanf("%i", &dato);
+            if(dato==2)
+            {
+                printf("\nVolviendo al menu principal...");
+                Sleep(2600);
+                system("cls");
+                break;
+            }
+            modificacionDeClientes(A);
+            system("cls");
+            break;
+        case 0:
+            system("cls");
+            break;
+        default:
+            break;
+        }
+    }
+    while(op!=0);
+}
 void login()
 {
-    int opcion, i=0;
+    int i=0;
+    int flag=1;
     char nombre[30];
     char clave[30];
     char caracter;
-
-    printf("\t----| Bienvenido a ... Sistema de Software Hotelero |----\n\n");
-
-    sleep(3);
-
-    printf("- Seleccione una opcion:\n\n");
-    printf("\t1. Iniciar sesion\n\n");
-    printf("\t2. Registrarse\n\n");
-    scanf("%d", &opcion);
-    system("cls");
-
-    if (opcion == 1)
+    do
     {
-        printf("\t----| Inicio de sesión en el software |----\n");
-        printf("\n- USERNAME: ");
-        scanf("%s", nombre);
-        printf("\n- PASSWORD: ");
-        while(caracter=getch())
+        memset(clave, 0, 30);
+        i=0;
+        printf(CYAN_T"\n\t- - INICIO DE SESION - -\n\n"RESET_COLOR);
+        printf(" - USUARIO: ");
+        fflush(stdin);
+        gets(nombre);
+        printf(" - CLAVE: ");
+
+        while((caracter=getch()))
         {
             if(caracter==13)
             {
@@ -125,41 +583,34 @@ void login()
                 i++;
             }
         }
-        system("cls");
-
         if(verificarUsuario(nombre,clave))
         {
-            printf("Inicio de sesion exitoso. Bienvenido %s!\n", nombre);
+            printf(VERDE_T"\n\n- Inicio de sesion exitoso. Bienvenido" AMARILLO_T" %s"VERDE_T"! -\n\n" RESET_COLOR, nombre);
+            flag=0;
         }
         else
         {
-            printf("Nombre de usuario o contrasena incorrectos.\n");
+            printf(ROJO_T"\n\nERROR: Nombre de usuario o clave incorrecta. Intente nuevamente.\n"RESET_COLOR);
+            system("pause");
+            system("cls");
         }
-
     }
-    else if (opcion == 2)
-    {
-        registrarUsuario();
-    }
-    else
-    {
-        printf("Opcion invalida.\n");
-    }
+    while(flag!=0);
 }
-
 void registrarUsuario()
 {
-    Usuario A;
+    Administrador A;
     int i=0;
     char caracter;
     char clave[30];
-    FILE *usuario = fopen(archivoUsuarios, "ab");
+    FILE *admin = fopen(archivoAdministrador, "ab");
 
-    printf("\t----| Formulario de Registro |----\n");
+    printf(CYAN_T"\n\t- - REGISTRO DE USUARIO - -\n"RESET_COLOR);
     printf("\n- USUARIO: ");
-    scanf("%s", A.nombre);
+    fflush(stdin);
+    gets(A.user);
     printf("\n- CLAVE: ");
-    while(caracter=getch())
+    while((caracter=getch()))
     {
         if(caracter==13)
         {
@@ -181,145 +632,110 @@ void registrarUsuario()
             i++;
         }
     }
-
-    if(usuario)
+    strcpy(A.password, clave);
+    if(admin)
     {
-        fwrite(&A, sizeof(Usuario), 1, usuario);
-        fclose(usuario);
+        fwrite(&A, sizeof(Administrador), 1, admin);
+        fclose(admin);
     }
-
-    printf("Usuario registrado correctamente!\n");
+    printf(VERDE_T"\n\n\t- USUARIO REGISTRADO CORRECTAMENTE -\n"RESET_COLOR);
 }
-
 int verificarUsuario(char nombre[], char contrasena[])
 {
-    Usuario A;
+    Administrador A;
 
-    FILE *usuario = fopen(archivoUsuarios, "rb");
-    if(usuario)
+    FILE *admin = fopen(archivoAdministrador, "rb");
+    if(admin)
     {
-        while((fread(&A, sizeof(Usuario), 1, usuario)) > 0)
+        while((fread(&A, sizeof(Administrador), 1, admin)) > 0)
         {
-            if((strcmp(nombre, A.nombre)) == 0 && (strcmp(contrasena, A.contrasena)) == 0)
+            if((strcmp(nombre, A.user)) == 0 && (strcmp(contrasena, A.password)) == 0)
             {
-                fclose(usuario);
+                fclose(admin);
                 return 1;
             }
         }
-        fclose(usuario);
+        rewind(admin);
+        fclose(admin);
     }
     return 0;
 }
-
-void realizarReserva() {
-    Cliente cliente;
-    int habitaciones;
-    float total;
-    
-    printf("Bienvenido al sistema de reservas del hotel ... .\n");
-    printf("Por favor, ingrese su nombre: ");
-    fgets(cliente.nombre, sizeof(cliente.nombre), stdin);
-    printf("Ingrese su nacionalidad: ");
-    fgets(cliente.nacionalidad, sizeof(cliente.nacionalidad), stdin);
-    printf("Ingrese su edad: ");
-    scanf("%d", &cliente.edad);
-    printf("Ingrese su código: ");
-    scanf("%d", &cliente.codigo);
-    printf("Ingrese la cantidad de habitaciones a reservar: ");
-    scanf("%d", &habitaciones);
-    
-    total = habitaciones * cliente.habitacion.precio;
-    
-    printf("\nDetalles de la reserva:\n");
-    printf("Nombre: %s", cliente.nombre);
-    printf("Nacionalidad: %s", cliente.nacionalidad);
-    printf("Edad: %d\n", cliente.edad);
-    printf("Código: %d\n", cliente.codigo);
-    printf("Cantidad de habitaciones: %d\n", habitaciones);
-    printf("Total a pagar: $%.2f\n", total);
-    
-    printf("\nProcesando el pago...\n");
-    sleep(2);
-    printf("Pago realizado exitosamente. ¡Reserva confirmada!\n");
-}
-
-void mostrarHorarioActividades() {
-    printf("Horario de Actividades\n");
-    printf("----------------------\t");
-
-    printf("Restaurante:\n");
-    printf(" - Desayuno: 7:00 AM - 10:00 AM\n");
-    printf(" - Almuerzo: 12:00 PM - 14:00 PM\n");
-    printf(" - Cena: 20:00 PM - 23:00 PM\n\n");
-
-    printf("Bar:\n");
-    printf(" - Horario de apertura: 17:00 PM\n");
-    printf(" - Horario de cierre: 01:00 AM\n\n");
-
-    printf("Spa:\n");
-    printf(" - Horario de apertura: 9:00 AM\n");
-    printf(" - Horario de cierre: 20:00 PM\n\n");
-
-    printf("Pileta:\n");
-    printf(" - Horario de apertura: 10:00 AM\n");
-    printf(" - Horario de cierre: 18:00 PM\n\n");
-
-    printf("Recreación:\n");
-    printf(" - Actividades disponibles durante todo el día\n\n");
-
-    printf("Gimnasio:\n");
-    printf(" - Horario de apertura: 7:00 AM\n");
-    printf(" - Horario de cierre: 22:30 PM\n");
-}
-
-void mostrarInformes(Habitacion habitaciones[], int numHabitaciones)
+void mostrarInformes()
 {
-    int contadorHabitaciones = 0;
-    int contadorPasajeros = 0;
-    int contadorOcupadas = 0;
-    int contadorDisponibles = 0;
-    int contadorMantenimiento = 0;
-
-    for (int i = 0; i < numHabitaciones; i++) {
-        contadorHabitaciones++;
-        if (strcmp(habitaciones[i].estado, "Ocupada") == 0) {
-            contadorPasajeros++;
-            contadorOcupadas++;
-        } else if (strcmp(habitaciones[i].estado, "Disponible") == 0) {
-            contadorDisponibles++;
-        } else if (strcmp(habitaciones[i].estado, "Mantenimiento") == 0) {
-            contadorMantenimiento++;
+    Habitacion A;
+    Cliente B;
+    int Pasajeros = 0;
+    int Ocupadas = 0;
+    int Disponibles = 0;
+    int Facturado=0;
+    int TotalPasajeros=0;
+    FILE * hab=fopen(archivoHabitaciones, "rb");
+    FILE * clientes=fopen(archivoClientes, "rb");
+    if(hab)
+    {
+        while((fread(&A, sizeof(Habitacion),1, hab))>0)
+        {
+            if (strcmp(A.estado, "Ocupada") == 0)
+            {
+                Pasajeros=Pasajeros + A.personas;
+                Ocupadas++;
+            }
+            else if (strcmp(A.estado, "Disponible") == 0)
+            {
+                Disponibles++;
+            }
+            Facturado=Facturado + (A.personas*A.precio);
         }
+        fclose(hab);
     }
-
-    printf("---- Informes del Hotel ----\n");
-    printf("Numero total de habitaciones: %i\n", contadorHabitaciones);
-    printf("Numero total de pasajeros: %i\n", contadorPasajeros);
-    printf("Habitaciones ocupadas: %i\n", contadorOcupadas);
-    printf("Habitaciones disponibles: %i\n", contadorDisponibles);
-    printf("Habitaciones en mantenimiento: %i\n", contadorMantenimiento);
+    if(clientes)
+    {
+        while((fread(&B, sizeof(Cliente), 1, clientes))>0)
+        {
+            TotalPasajeros++;
+        }
+        fclose(clientes);
+    }
+    printf("\t- -  INFORMES DEL HOTEL - - \n\n\n");
+    printf(" - Numero total de habitaciones: %i\n\n", rows*cols);
+    printf(" - Numero total de clientes activo: %i\n\n", Pasajeros);
+    printf(" - Numero total de clientes historicos: %i\n\n", TotalPasajeros);
+    printf(" - Habitaciones ocupadas: %i\n\n", Ocupadas);
+    printf(" - Habitaciones disponibles: %i\n\n", Disponibles);
+    printf(" - Total facturado: $ %i\n\n", Facturado);
 }
-void altaDeClientes()
+void checkIn(Cliente A)
 {
-    FILE * clientes = fopen(archivoClientes, "a+b");
+    FILE * clientes = fopen(archivoClientes, "r+b");
     FILE * hab = fopen(archivoHabitaciones, "r+b");
-    Cliente A;
-    int dato, flag=0, H;
+    Cliente C;
     Habitacion B;
+    Pila disponibles;
+    inicpila(&disponibles);
+    int dato, flag=0, H, maxCamas=0, opcion, resultadoE=0, resultadoS=0;
     if(hab &&  clientes)
     {
-        printf("\t\t\t\t- - - BIENVENIDO A LA ALTA DE CLIENTES! - - -\n");
+        while((fread(&B, sizeof(Habitacion),1, hab))>0)
+        {
+            if(B.camas>maxCamas)
+            {
+                maxCamas=B.camas;
+            }
+        }
+        rewind(hab);
+        printf(CYAN_T"\t\t- - - SISTEMA DE CHECK IN- - -\n"RESET_COLOR);
+
         do
         {
-            printf("\n- Ingrese la cantidad de personas que van a ocupar la habitacion. Hay habitaciones de hasta 5 personas: ");
+            printf("\n\n- Ingrese la cantidad de personas que van a ocupar la habitacion. Hay habitaciones de hasta %i personas: ", maxCamas);
             scanf("%i", &dato);
-            if(dato<1 || dato>5)
+            if(dato<1 || dato>maxCamas)
             {
-                printf(ROJO_T"\nERROR: El numero ingresado no es entre 1 y 5. Intente nuevamente.\n"RESET_COLOR);
+                printf(ROJO_T"\nERROR: El numero ingresado no es entre 1 y %i. Intente nuevamente.\n"RESET_COLOR, maxCamas);
                 system("pause");
             }
         }
-        while(dato<1 || dato>5);
+        while(dato<1 || dato>maxCamas);
 
         printf("\n- HABITACIONES DISPONIBLES: ");
 
@@ -327,10 +743,13 @@ void altaDeClientes()
         {
             if((strcmpi(B.estado,"Disponible"))==0 && B.camas>=dato)
             {
-                printf("| %i ", B.numero);
+                apilar(&disponibles, B.numero);
             }
         }
+
         rewind(hab);
+        ordenacionPilaDisponibles(&disponibles);
+        mostrar(&disponibles);
 
         do
         {
@@ -343,7 +762,7 @@ void altaDeClientes()
                 if(B.numero==H)
                 {
                     flag=1;
-                    if((strcmpi(B.estado, "Ocupada"))==0 || B.camas<dato)
+                    if((strcmpi(B.estado,"Ocupada"))==0 || B.camas<dato)
                     {
                         printf(ROJO_T"\nERROR: La habitacion elegida no esta disponible. Ingrese otra habitacion por favor.\n"RESET_COLOR);
                         system("pause");
@@ -356,24 +775,71 @@ void altaDeClientes()
                 printf(ROJO_T "\nERROR: La habitacion elegida no se encontro o no esta disponible. Intente con otra por favor.\n" RESET_COLOR);
                 system("pause");
             }
-
             rewind(hab);
         }
         while(flag!=1);
 
-        for(int i=1; i<=dato; i++)
+        do
         {
-            printf(AMARILLO_T"\n\t- CLIENTE %i -\n" RESET_COLOR, i);
-            A=cargarCliente(dato, H);
-            fwrite(&A, sizeof(Cliente), 1, clientes);
+            printf("\n- FECHA DE ENTRADA: ");
+            scanf("%i %i %i", &A.estadia.diaEntrada, &A.estadia.mesEntrada, &A.estadia.anioEntrada);
+
+            if(A.estadia.diaEntrada < 1 || A.estadia.diaEntrada > 31 || A.estadia.mesEntrada < 1 || A.estadia.mesEntrada > 12)
+            {
+                printf(ROJO_T "\nERROR: Fecha de entrada invalida. Intente nuevamente.\n" RESET_COLOR);
+                system("pause");
+            }
+            else
+            {
+                resultadoE = 1;
+            }
         }
+        while(!resultadoE);
 
+        do
+        {
+            printf("\n- FECHA DE EGRESO: ");
+            scanf("%i %i %i", &A.estadia.diaSalida, &A.estadia.mesSalida, &A.estadia.anioSalida);
 
+            if(A.estadia.diaSalida < 1 || A.estadia.diaSalida > 31 || A.estadia.mesSalida < 1 || A.estadia.mesSalida > 12)
+            {
+                printf(ROJO_T "\nERROR: Fecha de salida invalida. Intente nuevamente.\n" RESET_COLOR);
+            }
+            else
+            {
+                resultadoS = 1;
+            }
+        }
+        while(!resultadoS);
+
+        printf("\n\n- TOTAL A PAGAR: $ %i -\n\n [ 1 ] - Efectivo\n [ 2 ] - Tarjeta de debito o credito\n - ", B.precio*dato);
+        scanf("%i", &opcion);
+        printf("\nProcesando pago. ");
+        Sleep(1000);
+        printf(".");
+        Sleep(1000);
+        printf(" .\n");
+        Sleep(1000);
+
+        printf(VERDE_T"\n\t\t- - - CHECK IN REALIZADO CON EXITO! BIENVENIDO AL HOTEL"AMARILLO_T" %s"VERDE_T" - - - \n\n"RESET_COLOR, A.nombre);
+        system("pause");
+
+        while((fread(&C, sizeof(Cliente),1, clientes))>0)
+        {
+            if(C.codigo==A.codigo)
+            {
+                A.habitacion.numero=H;
+                strcpy(A.estado,"Activo");
+                fseek(clientes,(int) sizeof(Cliente) * (-1), SEEK_CUR);
+                fwrite(&A, sizeof(Cliente), 1, clientes);
+                break;
+            }
+        }
         while((fread(&B, sizeof(Habitacion), 1, hab))>0)
         {
             if(H==B.numero)
             {
-                strcpy(B.estado, "Ocupada");
+                strcpy(B.estado,"Ocupada");
                 B.personas=dato;
                 fseek(hab, (int) sizeof(Habitacion) * (-1), SEEK_CUR);
                 fwrite(&B, sizeof(Habitacion), 1, hab);
@@ -385,17 +851,18 @@ void altaDeClientes()
         fclose(clientes);
     }
 }
-Cliente cargarCliente(int dato, int H)
+Cliente cargarCliente(int flaggy)
 {
-    FILE * clientes = fopen(archivoClientes, "rb");
+    FILE * clientes = fopen(archivoClientes, "a+b");
     Cliente A, C;
     int flag = 0;
+
     if(clientes)
     {
-        A.habitacion.numero=H;
+        // NOMBRE
         do
         {
-            printf("\n- NOMBRE: ");
+            printf("\n- NOMBRE Y APELLIDO: ");
             fflush(stdin);
             gets(A.nombre);
             strupr(A.nombre);
@@ -413,11 +880,13 @@ Cliente cargarCliente(int dato, int H)
         }
         while(flag==1);
 
+        // NACIONALIDAD
         printf("\n- NACIONALIDAD: ");
         fflush(stdin);
         gets(A.nacionalidad);
         strupr(A.nacionalidad);
 
+        // EDAD
         do
         {
             printf("\n- EDAD: ");
@@ -430,23 +899,38 @@ Cliente cargarCliente(int dato, int H)
             }
         }
         while(A.edad < 1 || A.edad > 130);
-        do
+
+        // DNI
+        printf("\n- DNI: ");
+        scanf("%i", &A.dni);
+
+        // TELEFONO
+        printf("\n- TELEFONO DE CONTACTO: ");
+        scanf("%lu", &A.telefono);
+
+        if(flaggy!=1)
         {
-            flag=0;
-            A.codigo=rand() % 8999+1000;
-            while((fread(&C, sizeof(Cliente), 1, clientes))>0)
+            strcpy(A.estado,"Inactivo");
+            do
             {
-                if((C.codigo==A.codigo))
+                flag=0;
+                A.codigo=rand() % 8999+1000;
+                while((fread(&C, sizeof(Cliente), 1, clientes))>0)
                 {
-                    flag=1;
+                    if((C.codigo==A.codigo))
+                    {
+                        flag=1;
+                    }
                 }
+                rewind(clientes);
             }
-            rewind(clientes);
+            while(flag==1);
+
+            printf(VERDE_T"\t--- CLIENTE REGISTRADO CORRECTAMENTE!  ---\n" RESET_COLOR"\t-- TU CODIGO DE CLIENTE ES" AMARILLO_T" %i" RESET_COLOR" --\n\n", A.codigo);
+            fseek(clientes, 0, SEEK_END);
+            fwrite(&A, sizeof(Cliente), 1, clientes);
+            system("pause");
         }
-        while(flag==1);
-        printf(VERDE_T"\t--- CLIENTE REGISTRADO CORRECTAMENTE!  ---\n" RESET_COLOR"\t-- TU CODIGO DE CLIENTE ES" AMARILLO_T" %i" RESET_COLOR" --\n\n", A.codigo);
-        system("pause");
-        system("cls");
 
         fclose(clientes);
     }
@@ -470,8 +954,8 @@ void setHabitacionesStatus(int M[rows][cols])
                     A.camas=3+c;
                     A.numero= ((rows-r)*100) + (c+1);
                     M[r][c]=A.numero;
-                    A.precio= ((c+1) *4600) + ((r+1)*2150) + 1300;
-                    if(c!=2)
+                    A.precio= ((c+1) *3900) + ((rows-r)*3150) + 1300; // declaracion de precio de habitaciones
+                    if(c!=(cols-1))
                     {
                         strcpy(A.categoria, "Normal");
                     }
@@ -544,15 +1028,26 @@ void mostrarEdificio(int M[rows][cols])
         fclose(hab);
     }
 }
-
 void mostrarUnCliente(Cliente A)
 {
-    printf(CYAN_T"----------------------------------\n\n"RESET_COLOR);
-    printf("- NOMBRE: %s\n", A.nombre);
-    printf("- EDAD: %i\n", A.edad);
-    printf("- NRO. HABITACION: %i\n", A.habitacion.numero);
+    printf(CYAN_T"----------------------------------------------------------\n\n"RESET_COLOR);
+    printf("- NOMBRE: %s\t", A.nombre);
+    printf("- DNI: %i\n", A.dni);
+    printf("- EDAD: %i\t", A.edad);
     printf("- NACIONALIDAD: %s\n", A.nacionalidad);
-    printf("- CODIGO: %i\n\n", A.codigo);
+    printf("- TELEFONO: %lu\n", A.telefono);
+    if((strcmpi(A.estado, "Inactivo"))==0)
+    {
+        printf("- ESTADO DEL CLIENTE: "NARANJA_T "%s"RESET_COLOR "\n", A.estado);
+    }
+    else
+    {
+        printf("- ESTADO DEL CLIENTE: "VERDE_T"%s"RESET_COLOR"\n", A.estado);
+        printf("- NRO. HABITACION: %i\n", A.habitacion.numero);
+        printf("- FECHA DE ENTRADA: %i/%i/%i \t", A.estadia.diaEntrada, A.estadia.mesEntrada, A.estadia.anioEntrada);
+        printf("- FECHA DE SALIDA: %i/%i/%i \n", A.estadia.diaSalida, A.estadia.mesSalida, A.estadia.anioSalida);
+    }
+    printf("- CODIGO: "AMARILLO_T"%i\n"RESET_COLOR, A.codigo);
 }
 void mostrarClientes()
 {
@@ -567,7 +1062,6 @@ void mostrarClientes()
         fclose(clientes);
     }
 }
-
 Cliente consultaCliente()
 {
     Cliente A;
@@ -579,7 +1073,11 @@ Cliente consultaCliente()
         {
             printf("- ");
             scanf("%i", &dato);
-
+            if(dato==0)
+            {
+                A.codigo=0;
+                return A;
+            }
             while((fread(&A, sizeof(Cliente), 1, clientes))>0 && flag==0)
             {
                 if(dato==A.codigo)
@@ -598,64 +1096,15 @@ Cliente consultaCliente()
                 system("pause");
             }
             rewind(clientes);
-
         }
+
         printf("\n\n- NUMERO DE INTENTOS PERMITIDOS EXCEDIDOS. SALIENDO DEL SISTEMA -\n");
         Sleep(1500);
         fclose(clientes);
         exit(0);
     }
+
     return A;
-}
-int bajaDeCliente()
-{
-    FILE *clientes, *clientesAUX;
-    Cliente A;
-    int dato;
-    clientesAUX=fopen(archivoClientesAUX,"wb");
-    clientes=fopen(archivoClientes,"rb");
-
-    if(clientes && clientesAUX)
-    {
-
-        A=consultaCliente();
-        dato=A.codigo;
-        mostrarUnCliente(A);
-        printf("\n\tEsta seguro de eliminar este registro?\n1 - Si\n2 - No\n");
-        int op;
-        scanf("%i", &op);
-        if(op==2)
-        {
-            printf("\n- Proceso cancelado -\n");
-            system("pause");
-            system("cls");
-            return 1;
-        }
-        while((fread(&A, sizeof(Cliente),1, clientes))>0)
-        {
-            if (A.codigo!=dato)
-            {
-                fwrite(&A, sizeof(Cliente),1, clientesAUX);
-            }
-        }
-        fclose(clientes);
-        fclose(clientesAUX);
-    }
-    clientesAUX=fopen(archivoClientesAUX,"rb");
-    clientes=fopen(archivoClientes,"wb");
-
-    if(clientes && clientesAUX)
-    {
-        while(fread(&A, sizeof(Cliente),1, clientesAUX))
-        {
-            fwrite(&A, sizeof(Cliente),1, clientes);
-        }
-        fclose(clientes);
-        fclose(clientesAUX);
-    }
-    remove(archivoClientesAUX);
-    printf(VERDE_T"\n\t- Cliente dado de baja con exito -\n"RESET_COLOR);
-    return 0;
 }
 void mostrarUnaHabitacion(Habitacion A)
 {
@@ -663,7 +1112,7 @@ void mostrarUnaHabitacion(Habitacion A)
     printf("- NRO. DE HABITACION: %i\n", A.numero);
     printf("- CATEGORIA: %s\n", A.categoria);
     printf("- CAMAS: %i\n", A.camas);
-    printf("- PRECIO: %i\n", A.precio);
+    printf("- PRECIO: $ %i\n", A.precio);
     if((strcmpi(A.estado, "Ocupada"))==0)
     {
         printf("- ESTADO: "ROJO_T"%s\n"RESET_COLOR, A.estado);
@@ -684,6 +1133,403 @@ void mostrarHabitaciones()
         while((fread(&A, sizeof(Habitacion),1, hab))>0)
         {
             mostrarUnaHabitacion(A);
+        }
+        fclose(hab);
+    }
+}
+void ordenacionPilaDisponibles(Pila * dada)
+{
+    ///SE ORDENA LA PILA DE MENOR A MAYOR PARA MOSTRAR LAS HABITACIONES EN ORDEN ASCENDENTE
+    Pila aux, basura, ordenada;
+    inicpila(&aux);
+    inicpila(&basura);
+    inicpila(&ordenada);
+    apilar(&aux, desapilar(dada));
+    while(!pilavacia(dada))
+    {
+        while(!pilavacia(dada))
+        {
+            if(tope(dada)<tope(&aux))
+            {
+                apilar(&basura, desapilar(&aux));
+                apilar(&aux, desapilar(dada));
+            }
+            else
+            {
+                apilar(&basura, desapilar(dada));
+            }
+        }
+        while(!pilavacia(&basura))
+        {
+            apilar(dada, desapilar(&basura));
+        }
+        apilar(&ordenada, desapilar(&aux));
+        if(!pilavacia(dada))
+        {
+            apilar(&aux, desapilar(dada));
+        }
+    }
+    if(!pilavacia(&aux))
+    {
+        apilar(&ordenada, desapilar(&aux));
+    }
+    while(!pilavacia(&ordenada))
+    {
+        apilar(&basura, desapilar(&ordenada));
+    }
+    while(!pilavacia(&basura))
+    {
+        apilar(dada, desapilar(&basura));
+    }
+}
+void listadoInsercionPrecioHab()
+{
+    FILE * hab=fopen(archivoHabitaciones, "rb");
+    Habitacion A[20];
+    Habitacion B;
+    int validos=0;
+    if(hab)
+    {
+        while((fread(&B, sizeof(Habitacion),1, hab))>0)
+        {
+            A[validos]=B;
+            validos++;
+        }
+        for(int i=0; i<validos-1; i++)
+        {
+            insertarPrecio(A, i, A[i+1]);
+        }
+        for(int i=0; i<validos; i++)
+        {
+            mostrarUnaHabitacion(A[i]);
+        }
+        fclose(hab);
+    }
+}
+void insertarPrecio(Habitacion A[], int i, Habitacion dato)
+{
+    while(i>=0 && dato.precio<A[i].precio)
+    {
+        A[i+1]=A[i];
+        i--;
+    }
+    A[i+1]=dato;
+}
+int modificacionDeClientes(Cliente A)
+{
+    FILE * clientes=fopen(archivoClientes, "r+b");
+    Cliente B;
+    if(clientes)
+    {
+        while((fread(&B, sizeof(Cliente),1, clientes))>0)
+        {
+            if(B.codigo==A.codigo)
+            {
+                B=cargarCliente(1);
+                B.codigo=A.codigo;
+                strcpy(B.estado, A.estado);
+                if((strcmpi(A.estado,"Activo"))==0)
+                {
+                    B.habitacion.numero=A.habitacion.numero;
+                    B.estadia=A.estadia;
+                }
+                fseek(clientes, (int) sizeof(Cliente) * (-1), SEEK_CUR);
+                fwrite(&B, sizeof(Cliente), 1, clientes);
+                break;
+            }
+        }
+        printf(VERDE_T"\n\t- Cliente modificado correctamente -\n"RESET_COLOR);
+        system("pause");
+        fclose(clientes);
+    }
+    return 0;
+}
+int verificarArchivoClientes()
+{
+    ///VERIFICACION MEDIANTE UN RETURN 1 O 0 SI EL ARCHIVO ESTA CREADO O NO
+    FILE * clientes;
+    if((fopen(archivoClientes, "rb"))== NULL)
+    {
+        return 0;
+    }
+    return 1;
+}
+void listadoInsercionNumeroHab()
+{
+    FILE * hab=fopen(archivoHabitaciones, "rb");
+    Habitacion A[20];
+    Habitacion B;
+    int validos=0;
+    if(hab)
+    {
+        while((fread(&B, sizeof(Habitacion),1, hab))>0)
+        {
+            A[validos]=B;
+            validos++;
+        }
+        for(int i=0; i<validos-1; i++)
+        {
+            insertarNumero(A, i, A[i+1]);
+        }
+        for(int i=0; i<validos; i++)
+        {
+            mostrarUnaHabitacion(A[i]);
+        }
+        fclose(hab);
+    }
+}
+void insertarNumero(Habitacion A[], int i, Habitacion dato)
+{
+    while(i>=0 && dato.numero<A[i].numero)
+    {
+        A[i+1]=A[i];
+        i--;
+    }
+    A[i+1]=dato;
+}
+int checkOut(Cliente A)
+{
+    if(A.codigo==0)
+    {
+        return 0;
+    }
+    // SE CAMBIA EL ESTADO DE LA HABITACION A DISPONIBLE Y CON NINGUNA PERSONA DENTRO
+    FILE *clientes;
+    Cliente B;
+    clientes=fopen(archivoClientes,"r+b");
+
+
+    if(clientes)
+    {
+        while((fread(&B, sizeof(Cliente),1, clientes))>0)
+        {
+            if(A.habitacion.numero==B.habitacion.numero)
+            {
+                strcpy(B.estado, "Inactivo");
+                B.habitacion.numero=0;
+                fseek(clientes, (int)sizeof(Cliente) * (-1), SEEK_CUR);
+                fwrite(&B, sizeof(Cliente), 1, clientes);
+                break;
+            }
+        }
+        FILE * hab=fopen(archivoHabitaciones,"r+b");
+        Habitacion C;
+        if(hab)
+        {
+            while((fread(&C, sizeof(Habitacion),1,hab))>0)
+            {
+                if(A.habitacion.numero==C.numero)
+                {
+                    strcpy(C.estado, "Disponible");
+                    C.personas = 0; // vaciado de la habitacion
+                    fseek(hab, (int)sizeof(Habitacion) * (-1), SEEK_CUR);
+                    fwrite(&C, sizeof(Habitacion), 1, hab);
+                    break;
+
+                }
+            }
+            fclose(hab);
+        }
+        fclose(clientes);
+    }
+
+    printf(VERDE_T"\n\t- CHECKOUT REALIZADO CON EXITO! GRACIAS POR SU ESTADIA. -\n"RESET_COLOR);
+    system("pause");
+    return 0;
+}
+void listadoInsercionEdadCliente(int flag)
+{
+    FILE * clientes=fopen(archivoClientes, "rb");
+    Cliente A[20];
+    Cliente B;
+    int validos=0;
+    if(clientes)
+    {
+        while((fread(&B, sizeof(Cliente),1, clientes))>0)
+        {
+            if(flag)
+            {
+                if((strcmpi(B.estado, "Activo"))==0)
+                {
+                    A[validos]=B;
+                    validos++;
+                }
+            }
+            else
+            {
+                A[validos]=B;
+                validos++;
+            }
+        }
+        for(int i=0; i<validos-1; i++)
+        {
+            insertarEdad(A, i, A[i+1]);
+        }
+        for(int i=0; i<validos; i++)
+        {
+            mostrarUnCliente(A[i]);
+        }
+        fclose(clientes);
+    }
+}
+void insertarEdad(Cliente A[], int i, Cliente dato)
+{
+    while(i>=0 && dato.edad<A[i].edad)
+    {
+        A[i+1]=A[i];
+        i--;
+    }
+    A[i+1]=dato;
+}
+void listadoSeleccionNombreCliente(int flag)
+{
+    FILE * clientes = fopen(archivoClientes, "rb");
+    Cliente A[20];
+    Cliente B;
+    Cliente aux;
+    int validos=0, posMenor;
+    if(clientes)
+    {
+        while((fread(&B, sizeof(Cliente),1,clientes))>0)
+        {
+            if(flag)
+            {
+                if((strcmpi(B.estado, "Activo"))==0)
+                {
+                    A[validos]=B;
+                    validos++;
+                }
+            }
+            else
+            {
+                A[validos]=B;
+                validos++;
+            }
+        }
+        for(int i=0; i<(validos-1); i++)
+        {
+            posMenor=seleccionNombre(A, i, validos);
+            aux=A[i];
+            A[i]=A[posMenor];
+            A[posMenor]=aux;
+
+        }
+        for(int i=0; i<validos; i++)
+        {
+            mostrarUnCliente(A[i]);
+        }
+        fclose(clientes);
+    }
+}
+int seleccionNombre(Cliente A[], int posicion, int validos)
+{
+    int posMenor=posicion;
+    char menor[50];
+    strcpy(menor, A[posicion].nombre);
+    for(int i=posicion+1; i<validos; i++)
+    {
+        if((strcmpi(menor, A[i].nombre))>0)
+        {
+            posMenor=i;
+            strcpy(menor, A[i].nombre);
+        }
+    }
+    return posMenor;
+}
+void listadoInsercionHabitacionDeCliente(int flag)
+{
+    FILE * clientes=fopen(archivoClientes, "rb");
+    Cliente A[20];
+    Cliente B;
+    int validos=0;
+    if(clientes)
+    {
+        while((fread(&B, sizeof(Cliente), 1, clientes))>0)
+        {
+            if(flag)
+            {
+                if((strcmpi(B.estado,"Activo"))==0)
+                {
+                    A[validos]=B;
+                    validos++;
+                }
+            }
+        }
+        for(int i=0; i<validos-1; i++)
+        {
+            insertarNroHabitacionCliente(A, i, A[i+1]);
+        }
+        for (int i = 0; i < validos; i++)
+        {
+            mostrarUnCliente(A[i]);
+        }
+        fclose(clientes);
+    }
+}
+void insertarNroHabitacionCliente(Cliente A[], int i, Cliente dato)
+{
+    while (i>= 0 && dato.habitacion.numero < A[i].habitacion.numero)
+    {
+        A[i+1] = A[i];
+        i--;
+    }
+    A[i+1] = dato;
+}
+void listadoInsercionHabDisponible()
+{
+    FILE * hab=fopen(archivoHabitaciones, "rb");
+    Habitacion A[20];
+    Habitacion B;
+    int validos=0;
+    if(hab)
+    {
+        while((fread(&B, sizeof(Habitacion),1, hab))>0)
+        {
+            if((strcmpi(B.estado,"Disponible"))==0)
+            {
+                A[validos]=B;
+                validos++;
+            }
+        }
+        for(int i=0; i<validos-1; i++)
+        {
+            insertarNumero(A, i, A[i+1]);
+        }
+        for(int i=0; i<validos; i++)
+        {
+            mostrarUnaHabitacion(A[i]);
+        }
+        fclose(hab);
+    }
+}
+void editarHabitacion()
+{
+    FILE * hab=fopen(archivoHabitaciones, "r+b");
+    Habitacion A;
+    int numHab;
+
+    if(hab)
+    {
+        printf("\n\nIngrese la habitacion que desea editar: ");
+        scanf("%i", &numHab);
+
+
+        while(fread(&A, sizeof(Habitacion), 1, hab)>0)
+        {
+            if(numHab==A.numero)
+            {
+                mostrarUnaHabitacion(A);
+                printf("\n\n- Ingrese el nuevo numero de camas: ");
+                scanf("%i", &A.camas);
+                printf("\n\n- Ingrese el nuevo precio: ");
+                scanf("%i", &A.precio);
+
+                fseek(hab, (int) sizeof(Habitacion)*(-1), SEEK_CUR);
+                fwrite(&A, sizeof(Habitacion), 1, hab);
+                printf(VERDE_T"\n\t- HABITACION ACTUALIZADA CON EXITO -\n\n"RESET_COLOR);
+                system("pause");
+                break;
+            }
         }
         fclose(hab);
     }
